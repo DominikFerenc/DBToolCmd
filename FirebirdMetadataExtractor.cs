@@ -49,7 +49,6 @@ namespace DbMetaTool
                     sb.AppendLine($"RETURNS ({outputs})");
                 }
 
-                // 5. Pobieramy ciało procedury (BEGIN...END)
                 string bodyQuery = "SELECT RDB$PROCEDURE_SOURCE FROM RDB$PROCEDURES WHERE RDB$PROCEDURE_NAME = @procName";
                 string body = "BEGIN END";
                 using (var cmdBody = new FbCommand(bodyQuery, connection))
