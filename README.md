@@ -107,6 +107,3 @@ dotnet run -- update-db --connection-string "User=SYSDBA;Password=podajhaslo;Dat
 - Brak porównywania schematów (diff).
 - CREATE DOMAIN i CREATE TABLE rzucają błąd, jeśli istnieją.
 
-# Licencja
-
-Dodaj treść licencji, jeśli dotyczy.
