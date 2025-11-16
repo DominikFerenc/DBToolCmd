@@ -1,87 +1,98 @@
-DbMetaTool
+# Firebird DB Tool (.NET)
 
-DbMetaTool to prosta aplikacja konsolowa .NET 8.0 do zarządzania metadanymi bazy danych Firebird 5.0. Pozwala na eksportowanie struktury bazy do skryptów SQL oraz na budowanie nowej bazy (lub aktualizowanie istniejącej) na podstawie tych skryptów.
+Narzędzie konsolowe ułatwiające eksport struktur bazy danych Firebird do plików SQL oraz budowanie i aktualizację baz danych na podstawie katalogu skryptów.
 
-Projekt został napisany w C# z użyciem biblioteki FirebirdSql.Data.FirebirdClient.
+## Wymagania
+- .NET 8+
+- Firebird 3+ (lub kompatybilny)
+- Dostęp do pliku bazy danych lub hosta Firebird
 
-Zakres uproszczony: To narzędzie obsługuje tylko Domeny, Tabele i Procedury. Wszelkie inne obiekty (triggery, indeksy, więzy integralności, widoki itp.) są pomijane.
+## Instalacja
+Sklonuj repozytorium i przejdź do katalogu projektu:
 
-Wymagania
+```
+git clone https://github.com/twoj-repo/firebird-db-tool.git
+cd firebird-db-tool
+```
 
-.NET 8.0 SDK
-
-Dostęp do działającego serwera Firebird 5.0 (np. na localhost:3050)
-
-Upewnij się, że hasło SYSDBA w pliku Program.cs (w metodzie BuildDatabase) jest ustawione na Twoje hasło.
-
-Budowanie i uruchamianie
-
-Sklonuj lub pobierz pliki do jednego katalogu.
-
-Otwórz terminal w tym katalogu.
-
-Przywróć zależności (pobierz bibliotekę Firebird):
-
-dotnet restore
-
-Zbuduj projekt (opcjonalnie, dotnet run robi to automatycznie):
-
+## Budowanie projektu
+```
 dotnet build
+```
 
-Uruchom aplikację za pomocą dotnet run -- [polecenie] [argumenty]
+## Uruchomienie aplikacji
+```
+dotnet run -- [polecenie] [argumenty]
+```
 
-Użycie (Przykłady z debugowania)
+# Dostępne polecenia
 
-Aplikacja obsługuje trzy główne polecenia:
+## 1. export-scripts
 
-1. export-scripts
+Eksportuje metadane z istniejącej bazy danych do plików .sql.
 
-Generuje skrypty metadanych z istniejącej bazy danych. Wymaga istniejącej bazy (utworzonej ręcznie w IBExpert).
-
-przykłądowe polecenie
-
+### Przykład:
+```
 dotnet run -- export-scripts --connection-string "User=SYSDBA;Password=123;Database=C:\db\test.fdb;DataSource=localhost;" --output-dir "C:\MojeSkrypty"
+```
 
-Działanie:
+### Działanie:
+- Łączy się z podaną bazą danych.
+- Tworzy foldery:
+  - 1_domains/
+  - 2_tables/
+  - 3_procedures/
+- Każdy obiekt zapisuje w osobnym pliku .sql.
+- Procedury w formacie CREATE OR ALTER PROCEDURE.
 
-Narzędzie łączy się z bazą test.fdb.
+## 2. build-db
 
-W katalogu MojeSkrypty tworzy trzy podkatalogi: 1_domains, 2_tables, 3_procedures.
+Tworzy nową pustą bazę danych i wykonuje skrypty SQL z podanego katalogu.
 
-Wypełnia je plikami .sql.
-
-Procedury są eksportowane z użyciem CREATE OR ALTER PROCEDURE, aby ułatwić aktualizacje.
-
-2. build-db
-
-Buduje nową, pustą bazę danych i wykonuje na niej skrypty z podanego katalogu.
-
-Ważne: Ze względu na uprawnienia systemu Windows, unikaj tworzenia bazy w folderach osobistych (jak Pulpit). Użyj neutralnej lokalizacji, np. C:\db_temp.
-
+### Przykład:
+```
 dotnet run -- build-db --db-dir "C:\db_temp" --scripts-dir "C:\MojeSkrypty"
+```
 
-Działanie:
+### Działanie:
+- Tworzy nowy plik bazy danych w C:\db_temp.
+- Wykonuje skrypty domen, tabel i procedur.
 
-Tworzy nowy plik bazy danych (np. NewDb\_....fdb) w katalogu C:\db_temp.
 
-Wykonywuje skrypty ze MojeSkrypty w poprawnej kolejności.
 
-3. update-db
+## 3. update-db
 
-Aktualizuje istniejącą bazę danych, wykonując na niej skrypty. Działa podobnie do build-db, ale na istniejącej bazie.
+Aktualizuje istniejącą bazę danych, używając skryptów z katalogu.
 
+### Przykład:
+```
 dotnet run -- update-db --connection-string "User=SYSDBA;Password=podajhaslo;Database=C:\db\test.fdb;DataSource=localhost;" --scripts-dir "C:\MojeSkrypty"
+```
 
-Działanie:
+### Działanie:
+- Łączy się z istniejącą bazą danych.
+- Wykonuje skrypty SQL.
+- Procedury CREATE OR ALTER działają bezpiecznie.
 
-Łączy się z test.fdb.
+# Ograniczenia i uproszczenia
 
-Wykona skrypty. Dzięki CREATE OR ALTER procedury zostaną bezpiecznie zaktualizowane.
+### Obsługiwane obiekty:
+- Domeny
+- Tabele
+- Procedury
 
-Ograniczenia i Świadome Uproszczenia - według polecenia
+### Pomijane:
+- Indeksy
+- Klucze obce
+- Klucze główne
+- Constraints
+- Widoki
+- Triggery
 
-Tylko uproszczony zakres: Brak obsługi indeksów, kluczy obcych, triggerów, widoków itp.
+### Dodatkowe informacje:
+- Eksport tabel zawiera tylko kolumny i typy danych.
+- Brak porównywania schematów (diff).
+- CREATE DOMAIN i CREATE TABLE rzucają błąd, jeśli istnieją.
 
-Uproszczony eksport tabel: Skrypty CREATE TABLE nie eksportują kluczy podstawowych, obcych, ograniczeń NOT NULL ani DEFAULT. Eksportują "płaską" strukturę (nazwy kolumn i ich typy danych, np. INTEGER, VARCHAR(100)), aby umożliwić pomyślne wykonanie skryptu.
 
-Brak logiki "diff" w update-db: Operacja update-db nie porównuje schematów. Po prostu próbuje wykonać skrypty. Jak wspomniano, skrypty CREATE DOMAIN lub CREATE TABLE zawiodą, jeśli te obiekty już istnieją, co jest oczekiwanym zachowaniem w tym modelu.
+
