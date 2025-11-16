@@ -1,0 +1,87 @@
+DbMetaTool
+
+DbMetaTool to prosta aplikacja konsolowa .NET 8.0 do zarządzania metadanymi bazy danych Firebird 5.0. Pozwala na eksportowanie struktury bazy do skryptów SQL oraz na budowanie nowej bazy (lub aktualizowanie istniejącej) na podstawie tych skryptów.
+
+Projekt został napisany w C# z użyciem biblioteki FirebirdSql.Data.FirebirdClient.
+
+Zakres uproszczony: To narzędzie obsługuje tylko Domeny, Tabele i Procedury. Wszelkie inne obiekty (triggery, indeksy, więzy integralności, widoki itp.) są pomijane.
+
+Wymagania
+
+.NET 8.0 SDK
+
+Dostęp do działającego serwera Firebird 5.0 (np. na localhost:3050)
+
+Upewnij się, że hasło SYSDBA w pliku Program.cs (w metodzie BuildDatabase) jest ustawione na Twoje hasło.
+
+Budowanie i uruchamianie
+
+Sklonuj lub pobierz pliki do jednego katalogu.
+
+Otwórz terminal w tym katalogu.
+
+Przywróć zależności (pobierz bibliotekę Firebird):
+
+dotnet restore
+
+Zbuduj projekt (opcjonalnie, dotnet run robi to automatycznie):
+
+dotnet build
+
+Uruchom aplikację za pomocą dotnet run -- [polecenie] [argumenty]
+
+Użycie (Przykłady z debugowania)
+
+Aplikacja obsługuje trzy główne polecenia:
+
+1. export-scripts
+
+Generuje skrypty metadanych z istniejącej bazy danych. Wymaga istniejącej bazy (utworzonej ręcznie w IBExpert).
+
+przykłądowe polecenie
+
+dotnet run -- export-scripts --connection-string "User=SYSDBA;Password=123;Database=C:\db\test.fdb;DataSource=localhost;" --output-dir "C:\MojeSkrypty"
+
+Działanie:
+
+Narzędzie łączy się z bazą test.fdb.
+
+W katalogu MojeSkrypty tworzy trzy podkatalogi: 1_domains, 2_tables, 3_procedures.
+
+Wypełnia je plikami .sql.
+
+Procedury są eksportowane z użyciem CREATE OR ALTER PROCEDURE, aby ułatwić aktualizacje.
+
+2. build-db
+
+Buduje nową, pustą bazę danych i wykonuje na niej skrypty z podanego katalogu.
+
+Ważne: Ze względu na uprawnienia systemu Windows, unikaj tworzenia bazy w folderach osobistych (jak Pulpit). Użyj neutralnej lokalizacji, np. C:\db_temp.
+
+dotnet run -- build-db --db-dir "C:\db_temp" --scripts-dir "C:\MojeSkrypty"
+
+Działanie:
+
+Tworzy nowy plik bazy danych (np. NewDb\_....fdb) w katalogu C:\db_temp.
+
+Wykonywuje skrypty ze MojeSkrypty w poprawnej kolejności.
+
+3. update-db
+
+Aktualizuje istniejącą bazę danych, wykonując na niej skrypty. Działa podobnie do build-db, ale na istniejącej bazie.
+
+dotnet run -- update-db --connection-string "User=SYSDBA;Password=podajhaslo;Database=C:\db\test.fdb;DataSource=localhost;" --scripts-dir "C:\MojeSkrypty"
+
+Działanie:
+
+Łączy się z test.fdb.
+
+Wykona skrypty. Dzięki CREATE OR ALTER procedury zostaną bezpiecznie zaktualizowane.
+
+Ograniczenia i Świadome Uproszczenia - według polecenia
+
+Tylko uproszczony zakres: Brak obsługi indeksów, kluczy obcych, triggerów, widoków itp.
+
+Uproszczony eksport tabel: Skrypty CREATE TABLE nie eksportują kluczy podstawowych, obcych, ograniczeń NOT NULL ani DEFAULT. Eksportują "płaską" strukturę (nazwy kolumn i ich typy danych, np. INTEGER, VARCHAR(100)), aby umożliwić pomyślne wykonanie skryptu.
+
+Brak logiki "diff" w update-db: Operacja update-db nie porównuje schematów. Po prostu próbuje wykonać skrypty. Jak wspomniano, skrypty CREATE DOMAIN lub CREATE TABLE zawiodą, jeśli te obiekty już istnieją, co jest oczekiwanym zachowaniem w tym modelu.

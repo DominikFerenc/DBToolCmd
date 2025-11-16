@@ -1,0 +1,28 @@
+Pliki specyficzne dla systemów operacyjnych
+
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+Pliki konfiguracyjne IDE i edytorów
+
+.vs/
+.vscode/
+*.suo
+*.user
+
+Foldery kompilacji (kluczowe)
+
+[Bb]in/
+[Oo]bj/
+
+Pliki generowane przez .NET
+
+project.lock.json
+*.nuget.props
+*.nuget.targets
+
+Pliki związane z testami
+
+TestResults/
