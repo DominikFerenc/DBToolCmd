@@ -1,4 +1,4 @@
-# Firebird DB Tool (.NET)
+#Firebird DB Tool (.NET)
 
 Narzędzie konsolowe ułatwiające eksport struktur bazy danych Firebird do plików SQL oraz budowanie i aktualizację baz danych na podstawie katalogu skryptów.
 
