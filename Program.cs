@@ -1,12 +1,14 @@
-﻿using System;
-using System.IO;
-using FirebirdSql.Data.FirebirdClient;
-using DbMetaTool;
+﻿using FirebirdSql.Data.FirebirdClient;
+
 
 namespace DbMetaTool
 {
     public static class Program
     {
+        // Przykładowe wywołania:
+        // DbMetaTool build-db --db-dir "C:\db\fb5" --scripts-dir "C:\scripts"
+        // DbMetaTool export-scripts --connection-string "..." --output-dir "C:\out"
+        // DbMetaTool update-db --connection-string "..." --scripts-dir "C:\scripts"
         public static int Main(string[] args)
         {
             if (args.Length == 0)
@@ -79,6 +81,9 @@ namespace DbMetaTool
         }
 
 
+        /// <summary>
+        /// Buduje nową bazę danych Firebird 5.0 na podstawie skryptów.
+        /// </summary>
         public static void BuildDatabase(string databaseDirectory, string scriptsDirectory)
         {
 
@@ -119,6 +124,9 @@ namespace DbMetaTool
             }
         }
 
+        /// <summary>
+        /// Generuje skrypty metadanych z istniejącej bazy danych Firebird 5.0.
+        /// </summary>
         public static void ExportScripts(string connectionString, string outputDirectory)
         {
             Console.WriteLine("Rozpoczynanie eksportu metadanych...");
@@ -133,7 +141,9 @@ namespace DbMetaTool
             Console.WriteLine($"Eksport zakończony. Skrypty zapisano w: {outputDirectory}");
         }
 
-
+        /// <summary>
+        /// Aktualizuje istniejącą bazę danych Firebird 5.0 na podstawie skryptów.
+        /// </summary>
         public static void UpdateDatabase(string connectionString, string scriptsDirectory)
         {
             Console.WriteLine("Rozpoczynanie aktualizacji bazy danych...");
