@@ -1,5 +1,8 @@
-﻿using FirebirdSql.Data.FirebirdClient;
-
+﻿using System;
+using System.IO;
+using System.Linq;
+using FirebirdSql.Data.FirebirdClient;
+using DbMetaTool;
 
 namespace DbMetaTool
 {
@@ -16,13 +19,16 @@ namespace DbMetaTool
                 Console.WriteLine("Użycie:");
                 Console.WriteLine("  build-db --db-dir <ścieżka> --scripts-dir <ścieżka>");
                 Console.WriteLine("  export-scripts --connection-string <connStr> --output-dir <ścieżka>");
-                Console.WriteLine("  update-db --connection-string <connStr> --scripts-dir <ścieżka>");
+                Console.WriteLine("  update-db --connection-string <connStr> --scripts-dir <ścieżka> [--dry-run]");
                 return 1;
             }
 
             try
             {
                 var command = args[0].ToLowerInvariant();
+
+
+                bool isDryRun = args.Contains("--dry-run");
 
                 switch (command)
                 {
@@ -51,8 +57,7 @@ namespace DbMetaTool
                             string connStr = GetArgValue(args, "--connection-string");
                             string scriptsDir = GetArgValue(args, "--scripts-dir");
 
-                            UpdateDatabase(connStr, scriptsDir);
-                            Console.WriteLine("Baza danych została zaktualizowana pomyślnie.");
+                            UpdateDatabase(connStr, scriptsDir, isDryRun);
                             return 0;
                         }
 
@@ -80,20 +85,19 @@ namespace DbMetaTool
             return args[idx + 1];
         }
 
-
         /// <summary>
         /// Buduje nową bazę danych Firebird 5.0 na podstawie skryptów.
         /// </summary>
         public static void BuildDatabase(string databaseDirectory, string scriptsDirectory)
         {
-
             string dbName = $"NewDb_{DateTime.Now:yyyyMMdd_HHmmss}.fdb";
             string dbPath = Path.Combine(databaseDirectory, dbName);
+
             var csBuilder = new FbConnectionStringBuilder
             {
                 Database = dbPath,
                 UserID = "SYSDBA",
-                Password = "podajhaslo",
+                Password = "123",
                 DataSource = "localhost",
                 Port = 3050,
                 Dialect = 3,
@@ -110,8 +114,9 @@ namespace DbMetaTool
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"Nie udało się utworzyć bazy danych (sprawdź czy serwer działa i hasło SYSDBA jest poprawnie): {ex.Message}", ex);
+                throw new InvalidOperationException($"Nie udało się utworzyć bazy danych: {ex.Message}", ex);
             }
+
             try
             {
                 Console.WriteLine("Wykonywanie skryptów na nowej bazie...");
@@ -124,6 +129,7 @@ namespace DbMetaTool
             }
         }
 
+
         /// <summary>
         /// Generuje skrypty metadanych z istniejącej bazy danych Firebird 5.0.
         /// </summary>
@@ -131,9 +137,11 @@ namespace DbMetaTool
         {
             Console.WriteLine("Rozpoczynanie eksportu metadanych...");
             var extractor = new FirebirdMetadataExtractor(connectionString);
+
             string domainsDir = Path.Combine(outputDirectory, "1_domains");
             string tablesDir = Path.Combine(outputDirectory, "2_tables");
             string procsDir = Path.Combine(outputDirectory, "3_procedures");
+
             extractor.ExportDomains(domainsDir);
             extractor.ExportTables(tablesDir);
             extractor.ExportProcedures(procsDir);
@@ -144,13 +152,10 @@ namespace DbMetaTool
         /// <summary>
         /// Aktualizuje istniejącą bazę danych Firebird 5.0 na podstawie skryptów.
         /// </summary>
-        public static void UpdateDatabase(string connectionString, string scriptsDirectory)
+        public static void UpdateDatabase(string connectionString, string scriptsDirectory, bool isDryRun)
         {
-            Console.WriteLine("Rozpoczynanie aktualizacji bazy danych...");
-
-            FirebirdScriptRunner.ExecuteScriptsFromDir(connectionString, scriptsDirectory);
-
-            Console.WriteLine("Aktualizacja bazy danych zakończona.");
+            var updater = new FirebirdSchemaUpdater(connectionString, scriptsDirectory, isDryRun);
+            updater.UpdateSchema();
         }
     }
 }

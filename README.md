@@ -1,109 +1,161 @@
-# Firebird DB Tool (.NET)
+# DbMetaTool
 
-Narzędzie konsolowe ułatwiające eksport struktur bazy danych Firebird do plików SQL oraz budowanie i aktualizację baz danych na podstawie katalogu skryptów.
+**DbMetaTool** to prosta aplikacja konsolowa dla platformy **.NET 8.0**,
+służąca do zarządzania metadanymi baz danych **Firebird 5.0**.\
+Umożliwia:
+
+- eksportowanie struktury istniejącej bazy do skryptów SQL,
+- budowanie nowej bazy na podstawie tych skryptów,
+- aktualizowanie istniejącej bazy ("delta update") poprzez analizę
+  różnic między skryptami a rzeczywistą strukturą.
+
+Zakres obsługiwanych obiektów został uproszczony --- narzędzie
+obsługuje:
+
+- **Domeny**
+- **Tabele**
+- **Procedury**
+
+Pozostałe obiekty (triggery, indeksy, więzy integralności, widoki itp.)
+są ignorowane.
+
+---
 
 ## Wymagania
 
-- .NET 8+
-- Firebird 3+ (lub kompatybilny)
-- Dostęp do pliku bazy danych lub hosta Firebird
+- **.NET 8.0 SDK**
+- Działający serwer **Firebird 5.0** (np. `localhost:3050`)
+- Poprawnie ustawione hasło do użytkownika `SYSDBA` w
+  `Program.cs → BuildDatabase` (domyślnie używane: `123`)
 
-## Instalacja
+---
 
-Sklonuj repozytorium i przejdź do katalogu projektu:
+## Budowanie i uruchamianie
 
+1.  Sklonuj repozytorium lub skopiuj pliki narzędzia do jednego
+    katalogu.
+2.  Otwórz terminal w tym katalogu.
+
+### Przywracanie zależności
+
+```bash
+dotnet restore
 ```
-git clone https://github.com/twoj-repo/firebird-db-tool.git
-cd firebird-db-tool
-```
 
-## Budowanie projektu
+### Budowanie projektu (opcjonalne)
 
-```
+```bash
 dotnet build
 ```
 
-## Uruchomienie aplikacji
+### Uruchamianie aplikacji
 
-```
+```bash
 dotnet run -- [polecenie] [argumenty]
 ```
 
-# Dostępne polecenia
+---
 
-## 1. export-scripts
+## Dostępne polecenia
 
-Eksportuje metadane z istniejącej bazy danych do plików .sql.
+---
 
-### Przykład:
+## 1. `export-scripts`
 
-```
-dotnet run -- export-scripts --connection-string "User=SYSDBA;Password=123;Database=C:\db\test.fdb;DataSource=localhost;" --output-dir "C:\MojeSkrypty"
-```
+Eksportuje metadane istniejącej bazy danych do skryptów SQL.
 
-### Działanie:
+### Przykład użycia
 
-- Łączy się z podaną bazą danych.
-- Tworzy foldery:
-  - 1_domains/
-  - 2_tables/
-  - 3_procedures/
-- Każdy obiekt zapisuje w osobnym pliku .sql.
-- Procedury w formacie CREATE OR ALTER PROCEDURE.
-
-## 2. build-db
-
-Tworzy nową pustą bazę danych i wykonuje skrypty SQL z podanego katalogu.
-
-### Przykład:
-
-```
-dotnet run -- build-db --db-dir "C:\db_temp" --scripts-dir "C:\MojeSkrypty"
+```bash
+dotnet run -- export-scripts   --connection-string "User=SYSDBA;Password=123;Database=C:\TEST.FDB;DataSource=localhost;"   --output-dir "C:\MojeSkrypty"
 ```
 
-### Działanie:
+### Działanie
 
-- Tworzy nowy plik bazy danych w C:\db_temp.
-- Wykonuje skrypty domen, tabel i procedur.
+- Tworzy katalogi:
+  - `1_domains`
+  - `2_tables`
+  - `3_procedures`
+- Generuje pliki `.sql` dla każdego obiektu.
+- Procedury są eksportowane jako **CREATE OR ALTER PROCEDURE**.
 
-Uwaga: Nie używaj lokalizacji takich jak Pulpit/Dokumenty.
+---
 
-## 3. update-db
+## 2. `build-db`
 
-Aktualizuje istniejącą bazę danych, używając skryptów z katalogu.
+Tworzy nową, pustą bazę danych i wykonuje na niej skrypty z podanego
+katalogu.
 
-### Przykład:
+### Przykład użycia
 
+```bash
+dotnet run -- build-db   --db-dir "C:\db_temp"   --scripts-dir "C:\Users\domin\OneDrive\Pulpit\MojeSkrypty"
 ```
-dotnet run -- update-db --connection-string "User=SYSDBA;Password=podajhaslo;Database=C:\db\test.fdb;DataSource=localhost;" --scripts-dir "C:\MojeSkrypty"
+
+### Działanie
+
+- Tworzy nowy plik bazy danych (np. `NewDb_yyyyMMddHHmmss.fdb`) w
+  podanym katalogu.
+- Uruchamia skrypty SQL w ściśle ustalonej kolejności.
+- Pierwszy napotkany błąd przerywa proces.
+
+---
+
+## 3. `update-db` --- Inteligentna Aktualizacja („Delta Update")
+
+Aktualizuje istniejącą bazę danych poprzez analizę różnic między
+strukturą bazy a skryptami.
+
+### Przykład --- aktualizacja na żywo
+
+```bash
+dotnet run -- update-db   --connection-string "User=SYSDBA;Password=123;Database=C:\db\TEST.FDB;DataSource=localhost;"   --scripts-dir "C:\MojeSkrypty"
 ```
 
-### Działanie:
+### Przykład --- symulacja (Dry Run)
 
-- Łączy się z istniejącą bazą danych.
-- Wykonuje skrypty SQL.
-- Procedury CREATE OR ALTER działają bezpiecznie.
+```bash
+dotnet run -- update-db   --connection-string "User=SYSDBA;Password=123;Database=C:\db\TEST.FDB;DataSource=localhost;"   --scripts-dir "C:\MojeSkrypty"   --dry-run
+```
 
-# Ograniczenia i uproszczenia
+---
 
-### Obsługiwane obiekty:
+## Zaawansowane działanie
 
-- Domeny
-- Tabele
-- Procedury
+Narzędzie analizuje różnice między skryptami a bazą danych:
 
-### Pomijane:
+### Domeny
 
-- Indeksy
-- Klucze obce
-- Klucze główne
-- Constraints
-- Widoki
-- Triggery
+- Dodawanie nowych domen.
+- Rozszerzanie istniejących (np. `VARCHAR(50)` → `VARCHAR(100)`).
 
-### Dodatkowe informacje:
+### Tabele
 
-- Eksport tabel zawiera tylko kolumny i typy danych.
-- Brak porównywania schematów (diff).
-- CREATE DOMAIN i CREATE TABLE rzucają błąd, jeśli istnieją.
+- Tworzenie nowych tabel.
+- Dodawanie nowych kolumn (`ALTER TABLE ADD`).
+- Usuwanie kolumn niewystępujących w skryptach (`ALTER TABLE DROP`).
 
+### Procedury
+
+- Aktualizacja kodu przy użyciu `CREATE OR ALTER`.
+- Obsługa zależności między procedurami poprzez inteligentny mechanizm
+  ponawiania (`Retry Loop`).
+
+---
+
+## Ograniczenia
+
+- Obsługiwane są tylko:
+  - Domeny
+  - Tabele
+  - Procedury
+- Ignorowane są:
+  - Indeksy
+  - Klucze obce
+  - Widoki
+  - Wyzwalacze
+- Parser SQL jest uproszczony i oparty na **regexach** --- działa
+  poprawnie dla skryptów generowanych przez narzędzie, lecz może
+  wymagać dostosowań dla niestandardowych formatów.
+
+---
