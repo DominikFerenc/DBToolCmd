@@ -26,7 +26,7 @@ są ignorowane.
 - **.NET 8.0 SDK**
 - Działający serwer **Firebird 5.0** (np. `localhost:3050`)
 - Poprawnie ustawione hasło do użytkownika `SYSDBA` w
-  `Program.cs → BuildDatabase` (domyślnie używane: `123`)
+  `Program.cs → BuildDatabase` (domyślnie używane: `twojehaslo`)
 
 ---
 
